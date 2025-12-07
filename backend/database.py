@@ -7,12 +7,13 @@ try:
     from pymongo import MongoClient
     from pymongo.server_api import ServerApi
     from pymongo.errors import ConnectionFailure
+    import certifi
 except ImportError:
     print("motor/pymongo not found. Please install with 'pip install motor pymongo'.")
     exit(1)
 
 MONGO_URI = os.getenv("MONGO_URI")
-client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_URI)
+client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_URI, tlsCAFile=certifi.where())
 db = client.get_database("option_tool_db")
 
 users_collection = db.get_collection("users")
