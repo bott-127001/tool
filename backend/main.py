@@ -98,34 +98,6 @@ app.add_middleware(
 app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
 
 
-@app.get("/")
-async def read_index():
-    # This is a catch-all for the frontend
-    from fastapi.responses import FileResponse
-    return FileResponse('static/index.html')
-
-
-@app.get("/api")
-async def root():
-    """Root endpoint - does not trigger any authentication"""
-    return {
-        "message": "NIFTY50 Options Greek-Signature Signal System API",
-        "status": "running",
-        "auth_required": "Visit /auth/login?user=samarth or /auth/login?user=prajwal to authenticate"
-    }
-
-# Mount the static files directory AFTER all other routes
-# This will serve the React build files
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
-
-# IMPORTANT: The catch-all route must be defined AFTER the static mount
-# to handle client-side routing correctly.
-@app.get("/{full_path:path}")
-async def catch_all(full_path: str):
-    from fastapi.responses import FileResponse
-    return FileResponse('static/index.html')
-
-
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     try:
@@ -282,6 +254,29 @@ async def export_data():
 
     output.seek(0)
     return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=market_data_log.csv"})
+
+
+# --- Static Files and Catch-all ---
+# This section must come AFTER all other API routes
+
+@app.get("/api")
+async def root():
+    """Root API endpoint"""
+    return {
+        "message": "NIFTY50 Options Greek-Signature Signal System API",
+        "status": "running",
+    }
+
+# Mount the static files directory to serve the React app
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
+
+# The catch-all route to handle client-side routing (e.g., /dashboard, /settings)
+# This must be the LAST route defined.
+@app.get("/{full_path:path}")
+async def serve_react_app(full_path: str):
+    """Serve the React app for any path not caught by an API endpoint."""
+    from fastapi.responses import FileResponse
+    return FileResponse('static/index.html')
 
 
 if __name__ == "__main__":
