@@ -18,12 +18,12 @@ USER_CREDENTIALS = {
     "samarth": {
         "client_id": os.getenv("UPSTOX_SAMARTH_CLIENT_ID", "your_samarth_client_id"),
         "client_secret": os.getenv("UPSTOX_SAMARTH_CLIENT_SECRET", "your_samarth_client_secret"),
-        "redirect_uri": os.getenv("UPSTOX_REDIRECT_URI", "http://localhost:8000/auth/callback")
+        "redirect_uri": os.getenv("UPSTOX_REDIRECT_URI")
     },
     "prajwal": {
         "client_id": os.getenv("UPSTOX_PRAJWAL_CLIENT_ID", "your_prajwal_client_id"),
         "client_secret": os.getenv("UPSTOX_PRAJWAL_CLIENT_SECRET", "your_prajwal_client_secret"),
-        "redirect_uri": os.getenv("UPSTOX_REDIRECT_URI", "http://localhost:8000/auth/callback")
+        "redirect_uri": os.getenv("UPSTOX_REDIRECT_URI")
     }
 }
 
@@ -165,7 +165,7 @@ async def callback(
                     <h2>OAuth Error</h2>
                     <p>Error: {error}</p>
                     <p>Description: {error_msg}</p>
-                    <p><a href="http://localhost:3000/login">Go back to login</a></p>
+                    <p><a href="/login">Go back to login</a></p>
                 </body>
             </html>
             """,
@@ -180,7 +180,7 @@ async def callback(
                 <body>
                     <h2>Authentication Error</h2>
                     <p>Missing authorization code or state parameter.</p>
-                    <p><a href="http://localhost:3000/login">Go back to login</a></p>
+                    <p><a href="/login">Go back to login</a></p>
                 </body>
             </html>
             """,
@@ -194,7 +194,7 @@ async def callback(
                 <body>
                     <h2>Invalid State</h2>
                     <p>Invalid user state: {state}</p>
-                    <p><a href="http://localhost:3000/login">Go back to login</a></p>
+                    <p><a href="/login">Go back to login</a></p>
                 </body>
             </html>
             """,
@@ -234,7 +234,7 @@ async def callback(
                                 <li>Your client_id and client_secret are correct</li>
                                 <li>The authorization code hasn't expired</li>
                             </ul>
-                            <p><a href="http://localhost:3000/login">Go back to login</a></p>
+                            <p><a href="/login">Go back to login</a></p>
                         </body>
                     </html>
                     """,
@@ -254,7 +254,7 @@ async def callback(
                         <body>
                             <h2>Authentication Error</h2>
                             <p>No access token received from Upstox.</p>
-                            <p><a href="http://localhost:3000/login">Go back to login</a></p>
+                            <p><a href="/login">Go back to login</a></p>
                         </body>
                     </html>
                     """,
@@ -276,7 +276,7 @@ async def callback(
             print(f"✓ Authentication successful for user: {state}")
             print(f"✓ Polling enabled - data fetching will start")
             print(f"✓ Redirecting to dashboard...")
-            return RedirectResponse(url="http://localhost:3000/dashboard", status_code=302)
+            return RedirectResponse(url="/dashboard", status_code=302)
     
     except Exception as e:
         print(f"Error in callback: {str(e)}")
@@ -286,7 +286,7 @@ async def callback(
                 <body>
                     <h2>Server Error</h2>
                     <p>An error occurred during authentication: {str(e)}</p>
-                    <p><a href="http://localhost:3000/login">Go back to login</a></p>
+                    <p><a href="/login">Go back to login</a></p>
                 </body>
             </html>
             """,
