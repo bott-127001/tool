@@ -2,7 +2,7 @@ import httpx
 import asyncio
 from typing import Optional, Dict, List
 from datetime import datetime, timedelta
-from database import get_user_tokens, log_market_data
+from database import get_user_tokens
 from calc import find_atm_strike, get_atm_plus_otm_options
 from greek_signals import detect_signals, get_aggregated_greeks
 import json
@@ -307,6 +307,8 @@ async def polling_worker(manager):
                     if manager:
                         await manager.broadcast(latest_data)
 
+                        # Import here to avoid circular dependency
+                        from database import log_market_data
                         # Log the data to the database for ML training
                         log_market_data(latest_data)
                     else:
