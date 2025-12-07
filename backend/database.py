@@ -170,6 +170,33 @@ def update_user_settings(username: str, settings: Dict) -> Optional[Dict]:
     return None
 
 
+def log_market_data(data: dict):
+    """Logs a snapshot of market data to the database for ML training."""
+    if not data or 'timestamp' not in data:
+        return
+
+    conn = get_db_connection()
+    if not conn:
+        print("❌ Could not get DB connection to log market data.")
+        return
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO market_data_log (timestamp, underlying_price, atm_strike, aggregated_greeks, signals)
+            VALUES (?, ?, ?, ?, ?)
+        """, (
+            data.get('timestamp'),
+            data.get('underlying_price'),
+            data.get('atm_strike'),
+            json.dumps(data.get('aggregated_greeks', {})),
+            json.dumps(data.get('signals', []))
+        ))
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def log_signal(username: str, position: str, strike_price: float, strike_ltp: float,
                delta: float, vega: float, theta: float, gamma: float, raw_chain: dict):
     """Log a detected signal"""
