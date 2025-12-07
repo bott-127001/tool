@@ -206,21 +206,14 @@ async def get_trade_logs(user: str):
 @app.get("/api/option-chain")
 async def get_option_chain():
     """Get normalized option chain data"""
-    from data_fetcher import get_raw_option_chain
-    raw_chain = get_raw_option_chain()
-    if not raw_chain:
+    # This endpoint should return the latest processed data, same as the dashboard.
+    # The heavy lifting is done by the polling worker.
+    data = get_latest_data()
+    if not data:
         return {
-            "timestamp": None,
-            "underlying_price": None,
-            "atm_strike": None,
-            "expiry_date": None,
-            "options": [],
             "message": "Waiting for market data..."
         }
-    else:
-        from data_fetcher import normalize_option_chain
-        normalized = normalize_option_chain(raw_chain)
-        return normalized or {} # Return normalized data or an empty dict on failure
+    return data
 
 
 @app.api_route("/health-check", methods=["GET", "HEAD"])
