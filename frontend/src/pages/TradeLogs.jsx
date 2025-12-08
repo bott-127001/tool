@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import { useCurrentUser } from '../hooks/useCurrentUser'
 
 function TradeLogs() {
   const [logs, setLogs] = useState([])
-  const [currentUser, setCurrentUser] = useState('samarth') // Default, should be determined from auth
+  const currentUser = useCurrentUser()
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
   useEffect(() => {
     const loadLogs = async () => {
+      if (!currentUser) {
+        return; // Wait until currentUser is loaded
+      }
       try {
         const response = await axios.get(`/api/logs/${currentUser}`)
         if (response.data && response.data.logs) {
@@ -26,7 +30,7 @@ function TradeLogs() {
     }
 
     loadLogs()
-    
+
     // Refresh logs every 10 seconds
     const interval = setInterval(loadLogs, 10000)
     return () => clearInterval(interval)
@@ -53,7 +57,7 @@ function TradeLogs() {
 
       <div className="card">
         <h2>Trade Logs</h2>
-        <p>Detected signals for: <strong>{currentUser}</strong></p>
+        <p>Detected signals for: <strong>{currentUser || '...'}</strong></p>
         
         {logs.length === 0 ? (
           <p style={{ marginTop: '20px', color: '#666' }}>No signals detected yet.</p>

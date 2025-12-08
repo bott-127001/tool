@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import { useCurrentUser } from '../hooks/useCurrentUser'
 
 function Settings() {
   const [settings, setSettings] = useState({
@@ -10,17 +11,18 @@ function Settings() {
     gamma_threshold: 0.01,
     consecutive_confirmations: 2
   })
-  const [currentUser, setCurrentUser] = useState('samarth') // Default, should be determined from auth
+  const currentUser = useCurrentUser()
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const navigate = useNavigate()
 
   useEffect(() => {
+    if (!currentUser) {
+      return; // Wait for user to be loaded
+    }
     // Load current settings
     const loadSettings = async () => {
       try {
-        // Try to get settings for current user
-        // In production, determine user from auth state
         const response = await axios.get(`/api/settings/${currentUser}`)
         if (response.data) {
           setSettings(response.data)
@@ -48,6 +50,12 @@ function Settings() {
     e.preventDefault()
     setSaving(true)
     setMessage('')
+
+    if (!currentUser) {
+      setMessage('Error: No user is logged in.');
+      setSaving(false);
+      return;
+    }
 
     try {
       const response = await axios.put(
