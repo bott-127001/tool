@@ -158,8 +158,16 @@ async def test_ws():
 async def get_settings(user: str):
     """Get user settings"""
     settings = await get_user_settings(user)
+    # If no settings are found for the user, return a default structure.
+    # This prevents a 500 error for new users who haven't saved settings yet.
     if not settings:
-        raise HTTPException(status_code=404, detail="Settings not found")
+        return {
+            "delta_threshold": 0.20,
+            "vega_threshold": 0.10,
+            "theta_threshold": 0.02,
+            "gamma_threshold": 0.01,
+            "consecutive_confirmations": 2
+        }
     return settings
 
 
