@@ -399,9 +399,9 @@ async def polling_worker(manager):
 
 async def start_polling(manager):
     """Start the polling worker"""
-    global connection_manager
-    connection_manager = manager
-    await polling_worker(manager)
+    global connection_manager # Make sure we're modifying the global variable
+    connection_manager = manager # Assign the passed manager to the global
+    await polling_worker(manager) # Start the worker
 
 
 async def stop_polling():
@@ -440,3 +440,16 @@ def get_latest_data() -> Optional[Dict]:
 def get_raw_option_chain() -> Optional[Dict]:
     """Get raw option chain data"""
     return raw_option_chain
+
+async def get_current_authenticated_user() -> Optional[str]:
+    """
+    Checks which user has a valid, active token and returns their username.
+    """
+    import time
+    for user in ["samarth", "prajwal"]:
+        tokens = await get_user_tokens(user)
+        if tokens:
+            # Check if token exists, is not null, and is not expired
+            if tokens.get("access_token") and tokens.get("token_expires_at", 0) > time.time():
+                return user
+    return None

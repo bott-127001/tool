@@ -11,33 +11,18 @@ function Dashboard() {
     // Check authentication and load dashboard data
     const checkAuth = async () => {
       try {
-        // Get current user from localStorage or check both (but only once)
-        // Try samarth first, then prajwal
-        let currentUser = null
-        
-        const samarthAuth = await axios.get('/api/auth/check/samarth')
-          .catch(() => ({ data: { authenticated: false } }))
-        
-        if (samarthAuth.data?.authenticated) {
-          currentUser = 'samarth'
+        // A single endpoint to get the currently authenticated user
+        const response = await axios.get('/api/auth/current-user');
+        const { user } = response.data;
+
+        if (user) {
+          // Store current user for future use by other components
+          localStorage.setItem('currentUser', user);
         } else {
-          const prajwalAuth = await axios.get('/api/auth/check/prajwal')
-            .catch(() => ({ data: { authenticated: false } }))
-          
-          if (prajwalAuth.data?.authenticated) {
-            currentUser = 'prajwal'
-          }
-        }
-        
-        // If no user is authenticated, redirect to login
-        if (!currentUser) {
-          console.log('No user authenticated, redirecting to login')
+          // If no user is authenticated, redirect to login
+          console.log('No user authenticated, redirecting to login');
           navigate('/login')
-          return
         }
-        
-        // Store current user for future use
-        localStorage.setItem('currentUser', currentUser)
       } catch (error) {
         console.error('Error loading dashboard:', error)
       }
