@@ -10,34 +10,20 @@ function Dashboard() {
   useEffect(() => {
     // Check authentication and load dashboard data
     const checkAuth = async () => {
-      let attempts = 0;
-      const maxAttempts = 5;
-      const delay = 1000; // 1 second
+      try {
+        const response = await axios.get('/api/auth/current-user');
+        const { user } = response.data;
 
-      const attemptCheck = async () => {
-        try {
-          const response = await axios.get('/api/auth/current-user');
-          const { user } = response.data;
-
-          if (user) {
-            localStorage.setItem('currentUser', user);
-            return; // Success, stop trying
-          }
-        } catch (error) {
-          console.error(`Auth check attempt ${attempts + 1} failed:`, error);
-        }
-
-        attempts++;
-        if (attempts < maxAttempts) {
-          console.log(`Auth check failed, retrying in ${delay}ms...`);
-          setTimeout(attemptCheck, delay);
+        if (user) {
+          localStorage.setItem('currentUser', user);
         } else {
-          console.log('No user authenticated after multiple attempts, redirecting to login.');
+          console.log('No authenticated user found, redirecting to login.');
           navigate('/login');
         }
+      } catch (error) {
+        console.error('Authentication check failed:', error);
+        navigate('/login');
       }
-
-      attemptCheck();
     };
 
     checkAuth();

@@ -283,6 +283,15 @@ async def polling_worker(manager):
             current_user = found_user
             print(f"✓ Authenticated user found: {current_user}")
             print(f"Starting polling for {current_user}...")
+            # Immediately set a placeholder message so the frontend knows the user is authenticated
+            # This prevents the redirect loop on the frontend.
+            latest_data = {
+                "timestamp": datetime.now().isoformat(),
+                "underlying_price": None,
+                "atm_strike": None,
+                "message": f"Authenticated as {current_user}. Waiting for first data poll..."
+            }
+
         
         try:
             # Fetch option chain
