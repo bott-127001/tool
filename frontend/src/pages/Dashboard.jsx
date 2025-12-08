@@ -3,7 +3,16 @@ import { Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 
 function Dashboard() {
-  const [data, setData] = useState(null)
+  const [data, setData] = useState({
+    underlying_price: null,
+    atm_strike: null,
+    aggregated_greeks: null,
+    signals: null,
+    change_from_baseline: null,
+    baseline_greeks: null,
+    timestamp: null,
+    message: "Connecting to server..."
+  })
   const [connected, setConnected] = useState(false)
   const [updateCounter, setUpdateCounter] = useState(0) // Add this
   const wsRef = useRef(null)
@@ -133,22 +142,6 @@ function Dashboard() {
 
   const getTickCross = (match) => {
     return match ? <span className="tick">✓</span> : <span className="cross">✗</span>
-  }
-
-  if (!data) {
-    return (
-      <div className="container">
-        <div className="nav">
-          <Link to="/dashboard">Dashboard</Link>
-          <Link to="/settings">Settings</Link>
-          <Link to="/logs">Trade Logs</Link>
-          <Link to="/option-chain">Option Chain</Link>
-        </div>
-        <div className="card">
-          <p>Loading dashboard data...</p>
-        </div>
-      </div>
-    )
   }
 
   // Check if data is available or just placeholder

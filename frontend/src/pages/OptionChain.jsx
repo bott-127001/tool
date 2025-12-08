@@ -15,6 +15,9 @@ function OptionChain() {
         if (isMounted && response.data && response.data.data) {
           setChainData(response.data)
           setLoading(false)
+        } else if (isMounted) {
+          // If there's no data, stop loading and show the "waiting" message
+          setLoading(false)
         }
       } catch (error) {
         console.error('Error fetching option chain data:', error)
