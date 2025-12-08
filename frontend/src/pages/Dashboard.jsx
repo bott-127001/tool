@@ -1,33 +1,11 @@
-import React, { useEffect } from 'react'
+import React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useData } from './DataContext'
 
 function Dashboard() {
   const { data, connected } = useData();
-  const navigate = useNavigate()
-
-  useEffect(() => {
-    // Check authentication and load dashboard data
-    const checkAuth = async () => {
-      try {
-        const response = await axios.get('/api/auth/current-user');
-        const { user } = response.data;
-
-        if (user) {
-          localStorage.setItem('currentUser', user);
-        } else {
-          console.log('No authenticated user found, redirecting to login.');
-          navigate('/login');
-        }
-      } catch (error) {
-        console.error('Authentication check failed:', error);
-        navigate('/login');
-      }
-    };
-
-    checkAuth();
-  }, [navigate])
+  const navigate = useNavigate();
 
   const getTickCross = (match) => {
     return match ? <span className="tick">✓</span> : <span className="cross">✗</span>

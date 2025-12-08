@@ -154,28 +154,6 @@ async def test_ws():
     }
 
 
-@app.get("/api/dashboard")
-async def get_dashboard_data():
-    """Get current dashboard data"""
-    data = get_latest_data()
-    if not data:
-        # Return empty structure instead of 404 - allows dashboard to load
-        return {
-            "timestamp": None,
-            "underlying_price": None,
-            "atm_strike": None,
-            "expiry_date": None,
-            "aggregated_greeks": {
-                "call": {"delta": 0, "vega": 0, "theta": 0, "gamma": 0, "option_count": 0},
-                "put": {"delta": 0, "vega": 0, "theta": 0, "gamma": 0, "option_count": 0}
-            },
-            "signals": [],
-            "option_count": 0,
-            "message": "Waiting for market data..."
-        }
-    return data
-
-
 @app.get("/api/settings/{user}")
 async def get_settings(user: str):
     """Get user settings"""
@@ -200,19 +178,6 @@ async def get_trade_logs(user: str):
     from database import get_trade_logs
     logs = await get_trade_logs(user)
     return {"logs": logs}
-
-
-@app.get("/api/option-chain")
-async def get_option_chain():
-    """Get normalized option chain data"""
-    # This endpoint should return the latest processed data, same as the dashboard.
-    # The heavy lifting is done by the polling worker.
-    data = get_latest_data()
-    if not data:
-        return {
-            "message": "Waiting for market data..."
-        }
-    return data
 
 
 @app.api_route("/health-check", methods=["GET", "HEAD"])
