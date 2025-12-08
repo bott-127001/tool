@@ -107,12 +107,6 @@ function Dashboard() {
         
         // Store current user for future use
         localStorage.setItem('currentUser', currentUser)
-        
-        // Try to get dashboard data
-        const response = await axios.get('/api/dashboard')
-        if (response.data) {
-          setData(response.data)
-        }
       } catch (error) {
         console.error('Error loading dashboard:', error)
       }
