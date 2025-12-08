@@ -10,25 +10,37 @@ function Dashboard() {
   useEffect(() => {
     // Check authentication and load dashboard data
     const checkAuth = async () => {
-      try {
-        // A single endpoint to get the currently authenticated user
-        const response = await axios.get('/api/auth/current-user');
-        const { user } = response.data;
+      let attempts = 0;
+      const maxAttempts = 5;
+      const delay = 1000; // 1 second
 
-        if (user) {
-          // Store current user for future use by other components
-          localStorage.setItem('currentUser', user);
-        } else {
-          // If no user is authenticated, redirect to login
-          console.log('No user authenticated, redirecting to login');
-          navigate('/login')
+      const attemptCheck = async () => {
+        try {
+          const response = await axios.get('/api/auth/current-user');
+          const { user } = response.data;
+
+          if (user) {
+            localStorage.setItem('currentUser', user);
+            return; // Success, stop trying
+          }
+        } catch (error) {
+          console.error(`Auth check attempt ${attempts + 1} failed:`, error);
         }
-      } catch (error) {
-        console.error('Error loading dashboard:', error)
-      }
-    }
 
-    checkAuth()
+        attempts++;
+        if (attempts < maxAttempts) {
+          console.log(`Auth check failed, retrying in ${delay}ms...`);
+          setTimeout(attemptCheck, delay);
+        } else {
+          console.log('No user authenticated after multiple attempts, redirecting to login.');
+          navigate('/login');
+        }
+      }
+
+      attemptCheck();
+    };
+
+    checkAuth();
   }, [navigate])
 
   const getTickCross = (match) => {
