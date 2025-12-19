@@ -154,6 +154,11 @@ async def get_settings(user: str):
             "gamma_threshold": 0.01,
             "consecutive_confirmations": 2
         }
+    
+    # Convert ObjectId to string to avoid JSON serialization error
+    if "_id" in settings:
+        settings["_id"] = str(settings["_id"])
+        
     return settings
 
 
@@ -163,6 +168,11 @@ async def update_settings(user: str, settings: dict):
     updated = await update_user_settings(user, settings)
     if not updated:
         raise HTTPException(status_code=404, detail="User not found")
+        
+    # Convert ObjectId to string to avoid JSON serialization error
+    if "_id" in updated:
+        updated["_id"] = str(updated["_id"])
+        
     return {"message": "Settings updated", "settings": updated}
 
 
