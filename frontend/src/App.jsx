@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard'
 import Settings from './pages/Settings'
 import TradeLogs from './pages/TradeLogs'
 import OptionChain from './pages/OptionChain'
+import VolatilityPermission from './pages/VolatilityPermission'
 import Layout from './pages/Layout'
 import ProtectedRoute from './pages/ProtectedRoute' // Import the new gatekeeper
 import { AuthProvider } from './pages/AuthContext' // Import the new AuthProvider
@@ -24,6 +25,7 @@ function App() {
                 <Route path="settings" element={<Settings />} />
                 <Route path="logs" element={<TradeLogs />} />
                 <Route path="option-chain" element={<OptionChain />} />
+                <Route path="volatility-permission" element={<VolatilityPermission />} />
               </Route>
             </Route>
           </Routes>

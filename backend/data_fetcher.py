@@ -7,6 +7,7 @@ from calc import find_atm_strike
 from auth import refresh_access_token
 from greek_signals import detect_signals
 from utils import aggregate_greeks_atm_otm
+from volatility_model import calculate_volatility_metrics
 import json
 
 
@@ -39,6 +40,10 @@ raw_option_chain: Optional[Dict] = None
 baseline_greeks: Optional[Dict] = None # NEW: To store baseline greeks for the day
 polling_active = False
 should_poll = False  # Flag to control whether polling should actually fetch data
+# Price history for volatility calculations
+price_history: List[Dict] = []  # List of {timestamp, price} for 15-minute lookback
+open_price: Optional[float] = None  # Day's open price
+market_open_time: Optional[datetime] = None  # Market open time for the day
 from ws_manager import manager # Import the shared manager instance
 # Upstox API endpoints
 UPSTOX_BASE_URL = "https://api.upstox.com/v2"
@@ -266,9 +271,76 @@ async def clear_daily_baseline(username: str, date_str: str):
     if result.deleted_count > 0:
         print(f"🗑️ Cleared baseline from DB for {username} on {date_str}")
 
+
+def get_market_open_time(current_time_utc: datetime) -> datetime:
+    """
+    Get market open time for the current day (09:15 IST)
+    Returns datetime in UTC
+    """
+    # Convert UTC to IST
+    now_ist = current_time_utc + timedelta(hours=5, minutes=30)
+    # Create market open time in IST (09:15)
+    market_open_ist = now_ist.replace(hour=9, minute=15, second=0, microsecond=0)
+    # Convert back to UTC (IST = UTC + 5:30, so UTC = IST - 5:30)
+    market_open_utc = market_open_ist - timedelta(hours=5, minutes=30)
+    return market_open_utc
+
+
+def update_price_history(current_price: float, current_time: datetime):
+    """
+    Update price history, keeping only last 15 minutes of data
+    Also maintains open price for the day
+    """
+    global price_history, open_price, market_open_time
+    
+    # Check if we need to reset for a new day
+    today_market_open = get_market_open_time(current_time)
+    
+    # If market_open_time is None or it's a new day, reset
+    if market_open_time is None or today_market_open.date() != market_open_time.date():
+        price_history = []
+        open_price = current_price
+        market_open_time = today_market_open
+        print(f"📊 New trading day detected. Open price: {open_price}")
+    
+    # Add current price to history
+    price_history.append({
+        "timestamp": current_time,
+        "price": current_price
+    })
+    
+    # Remove entries older than 15 minutes
+    cutoff_time = current_time - timedelta(minutes=15)
+    price_history = [p for p in price_history if p["timestamp"] >= cutoff_time]
+
+
+def get_price_15min_ago(current_time: datetime) -> Optional[float]:
+    """
+    Get price from 15 minutes ago
+    Returns None if not available
+    """
+    cutoff_time = current_time - timedelta(minutes=15)
+    
+    # Find closest price to 15 minutes ago
+    closest_price = None
+    min_diff = float('inf')
+    
+    for price_entry in price_history:
+        time_diff = abs((price_entry["timestamp"] - cutoff_time).total_seconds())
+        if time_diff < min_diff:
+            min_diff = time_diff
+            closest_price = price_entry["price"]
+    
+    # Only return if we found something within 2 minutes of target (allowing for polling gaps)
+    if min_diff <= 120:  # 2 minutes tolerance
+        return closest_price
+    
+    return None
+
 async def polling_worker():
     """Background worker that polls Upstox API every 5 seconds"""
     global latest_data, raw_option_chain, polling_active, should_poll, baseline_greeks
+    global price_history, open_price, market_open_time
     
     polling_active = True
     current_user = None
@@ -392,6 +464,40 @@ async def polling_worker():
                     # NEW: Calculate change from baseline BEFORE detecting signals
                     change_from_baseline = calculate_change_from_baseline(aggregated, baseline_greeks)
 
+                    # Update price history for volatility calculations
+                    current_price = normalized_data["underlying_price"]
+                    # Parse timestamp - handle both with and without timezone
+                    timestamp_str = normalized_data["timestamp"]
+                    if timestamp_str.endswith('Z'):
+                        timestamp_str = timestamp_str.replace('Z', '+00:00')
+                    try:
+                        current_time_utc = datetime.fromisoformat(timestamp_str)
+                        if current_time_utc.tzinfo is None:
+                            # If no timezone, assume UTC
+                            current_time_utc = current_time_utc.replace(tzinfo=timezone.utc)
+                    except (ValueError, AttributeError):
+                        # Fallback to current time if parsing fails
+                        current_time_utc = datetime.now(timezone.utc)
+                    update_price_history(current_price, current_time_utc)
+                    
+                    # Get previous RV(current) for acceleration check
+                    prev_volatility_data = latest_data.get("volatility_metrics") if latest_data else None
+                    rv_current_prev = prev_volatility_data.get("rv_current") if prev_volatility_data else None
+                    
+                    # Calculate volatility metrics
+                    price_15min_ago = get_price_15min_ago(current_time_utc)
+                    volatility_metrics = calculate_volatility_metrics(
+                        current_price=current_price,
+                        price_15min_ago=price_15min_ago,
+                        open_price=open_price,
+                        market_open_time=market_open_time,
+                        current_time=current_time_utc,
+                        options=normalized_data["options"],
+                        atm_strike=normalized_data["atm_strike"],
+                        underlying_price=current_price,
+                        rv_current_prev=rv_current_prev
+                    )
+
                     # Detect signals - PASS CHANGE INSTEAD OF ABSOLUTE VALUES
                     # This ensures we are detecting the "Drift" (Signature) and not just static values.
                     signals = await detect_signals(normalized_data, change_from_baseline, current_user, signal_confirmation_state)
@@ -440,7 +546,8 @@ async def polling_worker():
                         "change_from_baseline": change_from_baseline,
                         "signals": signals,
                         "option_count": len(normalized_data.get("options", [])),
-                        "options": normalized_data.get("options", []) # Add full options list for OptionChain page
+                        "options": normalized_data.get("options", []), # Add full options list for OptionChain page
+                        "volatility_metrics": volatility_metrics  # Add volatility-permission model data
                     }
                     
                     # Broadcast to WebSocket clients
@@ -502,12 +609,15 @@ def disable_polling():
 
 def reset_baseline_greeks():
     """Manually reset the baseline greeks. The worker will clear it from the DB."""
-    global baseline_greeks
+    global baseline_greeks, price_history, open_price, market_open_time
     # This function is now simpler. It just clears the in-memory version.
     # The polling worker will see it's None, capture a new one, and save it.
     # The new API endpoint will handle DB clearing directly for immediate effect.
     baseline_greeks = None
-    print("🔄 In-memory baseline greeks have been reset. A new baseline will be captured on the next poll.")
+    price_history = []
+    open_price = None
+    market_open_time = None
+    print("🔄 In-memory baseline greeks and price history have been reset. A new baseline will be captured on the next poll.")
 
 
 def get_latest_data() -> Optional[Dict]:
