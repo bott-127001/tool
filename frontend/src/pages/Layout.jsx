@@ -24,6 +24,7 @@ function Layout() {
       <div className="nav">
         <Link to="/dashboard">Dashboard</Link>
         <Link to="/volatility-permission">Volatility Permission</Link>
+        <Link to="/direction-asymmetry">Direction & Asymmetry</Link>
         <Link to="/settings">Settings</Link>
         <Link to="/logs">Trade Logs</Link>
         <Link to="/option-chain">Option Chain</Link>

@@ -8,6 +8,7 @@ from auth import refresh_access_token
 from greek_signals import detect_signals
 from utils import aggregate_greeks_atm_otm
 from volatility_model import calculate_volatility_metrics
+from direction_model import calculate_direction_metrics
 import json
 
 
@@ -501,6 +502,12 @@ async def polling_worker():
                         rv_current_prev=rv_current_prev
                     )
 
+                    # Calculate Direction & Asymmetry metrics (price-based)
+                    direction_metrics = calculate_direction_metrics(
+                        price_history=price_history,
+                        market_open_time=market_open_time,
+                    )
+
                     # Detect signals - PASS CHANGE INSTEAD OF ABSOLUTE VALUES
                     # This ensures we are detecting the "Drift" (Signature) and not just static values.
                     signals = await detect_signals(normalized_data, change_from_baseline, current_user, signal_confirmation_state)
@@ -550,7 +557,8 @@ async def polling_worker():
                         "signals": signals,
                         "option_count": len(normalized_data.get("options", [])),
                         "options": normalized_data.get("options", []), # Add full options list for OptionChain page
-                        "volatility_metrics": volatility_metrics  # Add volatility-permission model data
+                        "volatility_metrics": volatility_metrics,  # Volatility-permission model data
+                        "direction_metrics": direction_metrics,    # Direction & Asymmetry model data
                     }
                     
                     # Broadcast to WebSocket clients
