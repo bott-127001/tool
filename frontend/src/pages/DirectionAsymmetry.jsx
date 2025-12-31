@@ -257,9 +257,6 @@ function DirectionAsymmetry() {
           <div className="card" style={{ marginTop: '20px' }}>
             <h3>Delta Efficiency (DE)</h3>
             <p>
-              <strong>DE</strong> = |Close - Open| / Σ |r_i|, where r_i = Price_i - Price_(i-1)
-            </p>
-            <p>
               <strong>Value:</strong>{' '}
               {de !== null && de !== undefined ? de.toFixed(2) : 'N/A'}
             </p>

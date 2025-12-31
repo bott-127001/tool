@@ -43,6 +43,7 @@ polling_active = False
 should_poll = False  # Flag to control whether polling should actually fetch data
 # Price history for volatility calculations
 price_history: List[Dict] = []  # List of {timestamp, price} for 15-minute lookback
+full_day_price_history: List[Dict] = []  # List of {timestamp, price} for full day (for REA/DE)
 open_price: Optional[float] = None  # Day's open price
 market_open_time: Optional[datetime] = None  # Market open time for the day
 from ws_manager import manager # Import the shared manager instance
@@ -289,10 +290,12 @@ def get_market_open_time(current_time_utc: datetime) -> datetime:
 
 def update_price_history(current_price: float, current_time: datetime):
     """
-    Update price history, keeping only last 15 minutes of data
+    Update price history:
+    - price_history: keeps only last 15 minutes of data (for RV calculations)
+    - full_day_price_history: keeps all prices from market open (for REA/DE calculations)
     Also maintains open price for the day
     """
-    global price_history, open_price, market_open_time
+    global price_history, full_day_price_history, open_price, market_open_time
     
     # Check if we need to reset for a new day
     today_market_open = get_market_open_time(current_time)
@@ -300,19 +303,25 @@ def update_price_history(current_price: float, current_time: datetime):
     # If market_open_time is None or it's a new day, reset
     if market_open_time is None or today_market_open.date() != market_open_time.date():
         price_history = []
+        full_day_price_history = []
         open_price = current_price
         market_open_time = today_market_open
         print(f"📊 New trading day detected. Open price: {open_price}")
     
-    # Add current price to history
-    price_history.append({
+    # Add current price to both histories
+    price_entry = {
         "timestamp": current_time,
         "price": current_price
-    })
+    }
+    price_history.append(price_entry)
+    full_day_price_history.append(price_entry)
     
-    # Remove entries older than 15 minutes
+    # Remove entries older than 15 minutes from rolling window (for RV)
     cutoff_time = current_time - timedelta(minutes=15)
     price_history = [p for p in price_history if p["timestamp"] >= cutoff_time]
+    
+    # Keep full day history (don't trim it - needed for REA/DE)
+    # No trimming needed for full_day_price_history
 
 
 def get_price_15min_ago(current_time: datetime) -> Optional[float]:
@@ -341,7 +350,7 @@ def get_price_15min_ago(current_time: datetime) -> Optional[float]:
 async def polling_worker():
     """Background worker that polls Upstox API every 5 seconds"""
     global latest_data, raw_option_chain, polling_active, should_poll, baseline_greeks
-    global price_history, open_price, market_open_time
+    global price_history, full_day_price_history, open_price, market_open_time
     
     polling_active = True
     current_user = None
@@ -509,8 +518,9 @@ async def polling_worker():
                     )
 
                     # Calculate Direction & Asymmetry metrics (price-based)
+                    # Use full_day_price_history for REA/DE calculations (needs full day data)
                     direction_metrics = calculate_direction_metrics(
-                        price_history=price_history,
+                        price_history=full_day_price_history,
                         market_open_time=market_open_time,
                         settings=settings,
                     )
@@ -627,12 +637,13 @@ def disable_polling():
 
 def reset_baseline_greeks():
     """Manually reset the baseline greeks. The worker will clear it from the DB."""
-    global baseline_greeks, price_history, open_price, market_open_time
+    global baseline_greeks, price_history, full_day_price_history, open_price, market_open_time
     # This function is now simpler. It just clears the in-memory version.
     # The polling worker will see it's None, capture a new one, and save it.
     # The new API endpoint will handle DB clearing directly for immediate effect.
     baseline_greeks = None
     price_history = []
+    full_day_price_history = []
     open_price = None
     market_open_time = None
     print("🔄 In-memory baseline greeks and price history have been reset. A new baseline will be captured on the next poll.")

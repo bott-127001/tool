@@ -23,6 +23,7 @@ function Layout() {
     <div className="container">
       <div className="nav">
         <Link to="/dashboard">Dashboard</Link>
+        <Link to="/greeks">Greeks</Link>
         <Link to="/volatility-permission">Volatility Permission</Link>
         <Link to="/direction-asymmetry">Direction & Asymmetry</Link>
         <Link to="/settings">Settings</Link>

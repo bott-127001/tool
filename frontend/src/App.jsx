@@ -2,6 +2,7 @@ import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
+import Greeks from './pages/Greeks'
 import Settings from './pages/Settings'
 import TradeLogs from './pages/TradeLogs'
 import OptionChain from './pages/OptionChain'
@@ -23,6 +24,7 @@ function App() {
               <Route path="/" element={<Layout />}>
                 <Route index element={<Navigate to="/dashboard" replace />} />
                 <Route path="dashboard" element={<Dashboard />} />
+                <Route path="greeks" element={<Greeks />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="logs" element={<TradeLogs />} />
                 <Route path="option-chain" element={<OptionChain />} />
