@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { useData } from './DataContext';
 import { useAuth } from './AuthContext';
@@ -7,6 +7,7 @@ function Layout() {
   const { connected } = useData();
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -19,31 +20,42 @@ function Layout() {
     }
   };
 
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
+  const closeMenu = () => {
+    setIsMenuOpen(false);
+  };
+
   return (
     <div className="container">
       <div className="nav">
-        <Link to="/dashboard">Dashboard</Link>
-        <Link to="/greeks">Greeks</Link>
-        <Link to="/volatility-permission">Volatility Permission</Link>
-        <Link to="/direction-asymmetry">Direction & Asymmetry</Link>
-        <Link to="/settings">Settings</Link>
-        <Link to="/logs">Trade Logs</Link>
-        <Link to="/option-chain">Option Chain</Link>
+        <button 
+          className="hamburger-btn"
+          onClick={toggleMenu}
+          aria-label="Toggle menu"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <div className={`nav-links ${isMenuOpen ? 'nav-links-open' : ''}`}>
+          <Link to="/dashboard" onClick={closeMenu}>Dashboard</Link>
+          <Link to="/rules" onClick={closeMenu}>Rules</Link>
+          <Link to="/greeks" onClick={closeMenu}>Greeks</Link>
+          <Link to="/volatility-permission" onClick={closeMenu}>Volatility Permission</Link>
+          <Link to="/direction-asymmetry" onClick={closeMenu}>Direction & Asymmetry</Link>
+          <Link to="/settings" onClick={closeMenu}>Settings</Link>
+          <Link to="/logs" onClick={closeMenu}>Trade Logs</Link>
+          <Link to="/option-chain" onClick={closeMenu}>Option Chain</Link>
+        </div>
         <div className="nav-right">
           <span className={`status-indicator ${connected ? 'status-online' : 'status-offline'}`}></span>
-          {connected ? 'Connected' : 'Disconnected'}
+          <span className="status-text">{connected ? 'Connected' : 'Disconnected'}</span>
           <button
             onClick={handleLogout}
-            style={{
-              marginLeft: '15px',
-              padding: '5px 15px',
-              backgroundColor: '#dc3545',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
+            className="logout-btn"
           >
             Logout
           </button>
