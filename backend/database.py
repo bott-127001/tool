@@ -90,7 +90,8 @@ async def get_user_settings(username: str) -> Optional[Dict]:
 
 async def update_user_settings(username: str, settings: Dict) -> Optional[Dict]:
     """Update user settings."""
-    update_data = {
+    # Fields that should be updated (excluding prev_day fields which are handled separately)
+    regular_fields = {
         "delta_threshold": settings.get("delta_threshold"),
         "vega_threshold": settings.get("vega_threshold"),
         "theta_threshold": settings.get("theta_threshold"),
@@ -105,8 +106,17 @@ async def update_user_settings(username: str, settings: Dict) -> Optional[Dict]:
         "dir_de_directional_threshold": settings.get("dir_de_directional_threshold"),
         "dir_de_neutral_threshold": settings.get("dir_de_neutral_threshold"),
     }
-    # Filter out None values
-    update_data = {k: v for k, v in update_data.items() if v is not None}
+    # Filter out None values for regular fields
+    update_data = {k: v for k, v in regular_fields.items() if v is not None}
+    
+    # Previous day inputs (for Opening Location & Gap Acceptance)
+    # These should be included even if None (to allow clearing values)
+    if "prev_day_close" in settings:
+        update_data["prev_day_close"] = settings["prev_day_close"]
+    if "prev_day_range" in settings:
+        update_data["prev_day_range"] = settings["prev_day_range"]
+    if "prev_day_date" in settings:
+        update_data["prev_day_date"] = settings["prev_day_date"]
 
     result = await settings_collection.find_one_and_update(
         {"username": username},
