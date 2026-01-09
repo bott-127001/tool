@@ -72,9 +72,7 @@ function Dashboard() {
     <>
       <div className="card">
         <h2>Dashboard</h2>
-        <p style={{ color: '#666', fontSize: '14px' }}>
-          Overview of calculated values: Greek signatures, Volatility Permission, and Direction & Asymmetry states
-        </p>
+        <p style={{ color: '#666', fontSize: '14px' }}></p>
       </div>
 
       {/* Market Data (mirrors Greeks page) */}
@@ -96,7 +94,7 @@ function Dashboard() {
 
       {/* Direction & Asymmetry State Card */}
       <div className="card" style={{ marginTop: '20px' }}>
-        <h2>Direction & Asymmetry</h2>
+        <h2>Direction</h2>
         {hasData && Object.keys(directionData).length > 0 ? (
           <div style={{
             padding: '20px',
@@ -128,7 +126,7 @@ function Dashboard() {
 
       {/* Volatility Permission State Card */}
       <div className="card" style={{ marginTop: '20px' }}>
-        <h2>Volatility Permission</h2>
+        <h2>Volatility</h2>
         {hasData && market_state ? (
           <div style={{
             padding: '20px',
@@ -171,7 +169,7 @@ function Dashboard() {
 
       {/* Greek Signature Table */}
       <div className="card" style={{ marginTop: '20px' }}>
-        <h2>Greek Signature Detector</h2>
+        <h2>Greeks</h2>
         {hasData && signals && signals.length > 0 ? (
           <div className="table-responsive-wrapper">
             <table>

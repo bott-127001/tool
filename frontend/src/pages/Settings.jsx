@@ -113,6 +113,9 @@ function Settings() {
     }
   };
 
+  
+        
+       
   return (
     <>
       <div className="card">
@@ -387,6 +390,9 @@ function Settings() {
             Clear All Data
           </button>
         </div>
+        
+
+        
       </div>
     </>
   )

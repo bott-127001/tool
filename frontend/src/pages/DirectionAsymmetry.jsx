@@ -163,16 +163,13 @@ function DirectionAsymmetry() {
   return (
     <>
       <div className="card">
-        <h2>Direction & Asymmetry Model (Price-Based)</h2>
+        <h2>Direction Model</h2>
       </div>
 
       {/* Previous Day Inputs (Optional) */}
       <div className="card" style={{ marginTop: '20px' }}>
-        <h3>Previous Day Inputs (Optional)</h3>
-        <p style={{ color: '#666', fontSize: '14px', marginBottom: '10px' }}>
-          Hybrid: system uses its data when available; if not, provide values here. These feed into Gap and Gap %.
-          Saved values expire daily—please update each day.
-        </p>
+        <h3>Previous Day Inputs</h3>
+        <p style={{ color: '#666', fontSize: '14px', marginBottom: '10px' }}></p>
         <form onSubmit={handleSavePrevDayInputs} style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <label htmlFor="prev_day_close" style={{ fontWeight: 500, marginBottom: '4px' }}>Previous Day Close</label>
