@@ -185,19 +185,48 @@ def calculate_rea(
     REA = (RE_up - RE_down) / IB_range
     """
     if not intraday_prices:
+        print("⚠️ REA: No intraday prices provided")
         return None
 
     if session_start is None:
+        print("⚠️ REA: session_start is None")
         return None
 
     # Ensure session_start is timezone-aware (assume UTC if not)
     if session_start.tzinfo is None:
         session_start = session_start.replace(tzinfo=timezone.utc)
 
+    # Always use the first price timestamp as the effective session start
+    # IB window is calculated from when the first fetch occurs, not from market open time
+    first_price_ts = None
+    for p in intraday_prices:
+        ts = p.get("timestamp")
+        if ts:
+            if isinstance(ts, str):
+                try:
+                    ts = datetime.fromisoformat(ts.replace('Z', '+00:00'))
+                except:
+                    continue
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
+            if first_price_ts is None or ts < first_price_ts:
+                first_price_ts = ts
+    
+    # Always use first_price_ts as effective start (when first fetch occurred)
+    # Only fall back to session_start if we can't find any price timestamps
+    if first_price_ts:
+        effective_start = first_price_ts
+        print(f"ℹ️ REA: Using first fetch timestamp as effective start. First fetch: {first_price_ts}, Market open: {session_start}")
+    else:
+        effective_start = session_start
+        print(f"⚠️ REA: No price timestamps found, falling back to market open time: {session_start}")
+
     # Split IB vs rest of day based on X minutes from session_start
     # TODO: Change back to 60 minutes for production after testing
     ib_minutes = 5  # Testing: 5 minutes. Production: 60 minutes
-    ib_end = session_start + timedelta(minutes=ib_minutes)
+    ib_end = effective_start + timedelta(minutes=ib_minutes)
+    
+    print(f"ℹ️ REA: Calculating IB window. Effective start: {effective_start}, IB end: {ib_end}, IB minutes: {ib_minutes}")
     
     # Ensure all timestamps are timezone-aware for comparison
     ib_prices = []
@@ -229,6 +258,8 @@ def calculate_rea(
         try:
             if price_timestamp <= ib_end:
                 ib_prices.append(price)
+                if len(ib_prices) <= 3:  # Log first few prices for debugging
+                    print(f"ℹ️ REA: Added price to IB: {price} at {price_timestamp}")
         except (TypeError, ValueError) as e:
             # If comparison fails, log and skip
             print(f"⚠️ REA: Timestamp comparison error: {e}, timestamp: {price_timestamp}, ib_end: {ib_end}")
@@ -243,7 +274,15 @@ def calculate_rea(
         if len(intraday_prices) > 0:
             first_ts = intraday_prices[0].get("timestamp")
             last_ts = intraday_prices[-1].get("timestamp") if len(intraday_prices) > 1 else first_ts
-            print(f"⚠️ REA: No prices in IB window (first {ib_minutes} min). Session start: {session_start}, IB end: {ib_end}, First price ts: {first_ts}, Last price ts: {last_ts}, Total prices: {len(intraday_prices)}, All prices count: {len(all_prices)}")
+            print(f"⚠️ REA: No prices in IB window (first {ib_minutes} min). Effective start: {effective_start}, IB end: {ib_end}, First price ts: {first_ts}, Last price ts: {last_ts}, Total prices: {len(intraday_prices)}, All prices count: {len(all_prices)}")
+            # Show sample of price timestamps for debugging
+            sample_timestamps = []
+            for i, p in enumerate(intraday_prices[:5]):
+                ts = p.get("timestamp")
+                if ts:
+                    sample_timestamps.append(f"Price[{i}]: {ts}")
+            if sample_timestamps:
+                print(f"ℹ️ REA: Sample price timestamps: {', '.join(sample_timestamps)}")
         return None
 
     if len(all_prices) == 0:
@@ -263,6 +302,8 @@ def calculate_rea(
     re_down = max(0.0, ib_low - day_low)
 
     rea = (re_up - re_down) / ib_range
+
+    print(f"✅ REA: Calculated successfully. IB High: {ib_high}, IB Low: {ib_low}, IB Range: {ib_range}, RE Up: {re_up}, RE Down: {re_down}, REA: {rea}, IB prices count: {len(ib_prices)}")
 
     return {
         "ib_high": ib_high,
